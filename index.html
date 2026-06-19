@@ -127,7 +127,9 @@
     }
 
     /* ─── Label preview area (this is what gets printed) ─── */
-    #printArea { display: none; }
+    #printArea {
+      display: none;
+    }
 
     .label-card {
       background: #ffffff;
@@ -326,7 +328,7 @@
       cursor: pointer;
     }
 
-    /* ─── Print styles: only the label prints ─── */
+    /* ─── Print styles: 画面表示用の要素は全て隠し、#printArea の複製だけを出す ─── */
     @media print {
       @page {
         size: 50mm 30mm;
@@ -334,19 +336,18 @@
       }
       html, body {
         background: #fff !important;
-        height: auto;
+        height: auto !important;
+        width: auto !important;
       }
-      .app, .header, .footer, .scan-btn, .raw-data-box, .cam-modal {
+      /* 画面用のUIを丸ごと非表示にする（#printAreaはbody直下なので影響されない） */
+      .app {
         display: none !important;
-      }
-      .main {
-        padding: 0;
-        overflow: visible;
       }
       #printArea {
         display: block !important;
+        position: static !important;
       }
-      .label-card {
+      #printArea .label-card {
         display: flex !important;
         box-shadow: none !important;
         border: none !important;
@@ -355,6 +356,7 @@
         height: 30mm;
         padding: 3mm 4mm;
         page-break-inside: avoid;
+        margin: 0;
       }
     }
   </style>
@@ -494,7 +496,55 @@
 
   function doPrint() {
     if (!lastScannedData) return;
-    window.print();
+
+    // 印刷専用エリアに、画面上のラベルと同じ内容を複製して作る。
+    // (画面用の.appはdisplay:noneにされるため、印刷時はこちら側だけを使う)
+    const printArea = document.getElementById('printArea');
+    printArea.innerHTML = '';
+
+    const card = document.createElement('div');
+    card.className = 'label-card show';
+
+    const row = document.createElement('div');
+    row.className = 'label-row';
+
+    const emphasisBlock = document.createElement('div');
+    emphasisBlock.className = 'emphasis-block';
+
+    const f1 = document.createElement('div');
+    f1.className = 'field-1';
+    f1.textContent = field1El.textContent;
+
+    const f2 = document.createElement('div');
+    f2.className = 'field-2';
+    f2.textContent = field2El.textContent;
+
+    emphasisBlock.appendChild(f1);
+    emphasisBlock.appendChild(f2);
+
+    const qrWrap = document.createElement('div');
+    qrWrap.className = 'qr-block';
+
+    row.appendChild(emphasisBlock);
+    row.appendChild(qrWrap);
+    card.appendChild(row);
+    printArea.appendChild(card);
+
+    // QRコードを印刷専用エリア側にも生成する
+    new QRCode(qrWrap, {
+      text: lastScannedData,
+      width: 92,
+      height: 92,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    // QRCode.jsは非同期で<img>/<canvas>を差し込むため、
+    // 描画が確実に終わるまで少し待ってから印刷を呼ぶ
+    setTimeout(() => {
+      window.print();
+    }, 150);
   }
 
   // ─── Camera scanning (QR読取り) ───
