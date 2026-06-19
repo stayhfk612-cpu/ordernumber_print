@@ -331,25 +331,66 @@
 
     /* ─── Print styles: 印刷時は#labelCardPrintだけを表示する ─── */
     @media print {
+      @page {
+        size: 55mm 65mm; /* 幅55mm × 長さ65mm（プチラパン設定値 W55×P65） */
+        margin: 0;
+      }
       html, body {
         background: #fff !important;
         height: auto !important;
         width: auto !important;
         margin: 0 !important;
+        overflow: hidden !important;
       }
       /* 画面用のUIを丸ごと非表示にする */
       .app {
         display: none !important;
       }
-      /* 印刷専用ラベルだけを表示する（用紙サイズはプリンタ側の設定に委ねる＝@page指定なし） */
+      /* 印刷専用ラベルだけを表示する。用紙サイズ内に収まるよう固定サイズで指定 */
       #labelCardPrint {
         display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
         box-shadow: none !important;
         border: none !important;
         border-radius: 0 !important;
-        width: auto;
-        padding: 4mm;
+        width: 55mm;
+        height: 65mm;
+        padding: 4mm 3mm;
         margin: 0;
+        overflow: hidden;
+        page-break-after: avoid;
+        page-break-inside: avoid;
+        gap: 3mm;
+      }
+      /* 縦長の用紙に合わせ、印刷時は横並び(.label-row)ではなく縦並びにする */
+      #labelCardPrint .label-row {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        width: 100%;
+        gap: 3mm;
+      }
+      #labelCardPrint .emphasis-block {
+        width: 100%;
+        text-align: center;
+      }
+      #labelCardPrint .field-1 {
+        font-size: 7mm !important;
+        line-height: 1.2 !important;
+        word-break: break-all;
+      }
+      #labelCardPrint .field-2 {
+        font-size: 5mm !important;
+        line-height: 1.25 !important;
+        word-break: break-all;
+        margin-top: 1mm !important;
+      }
+      #labelCardPrint .qr-block img,
+      #labelCardPrint .qr-block canvas {
+        width: 32mm !important;
+        height: 32mm !important;
       }
     }
   </style>
@@ -478,13 +519,14 @@
     });
 
     // 印刷専用側（常に同じ内容に同期しておく。印刷時に初めて表示される）
+    // 表示サイズ(32mm)に対して十分な解像度(300px)で生成し、印字をくっきりさせる
     field1Print.textContent = f1;
     field2Print.textContent = f2;
     qrBlockPrint.innerHTML = '';
     new QRCode(qrBlockPrint, {
       text: data,
-      width: 92,
-      height: 92,
+      width: 300,
+      height: 300,
       colorDark: '#000000',
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
