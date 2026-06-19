@@ -329,7 +329,7 @@
     /* ─── Print styles: 印刷時は#labelCardPrintだけを表示する ─── */
     @media print {
       @page {
-        size: 55mm 65mm; /* 幅55mm × 長さ65mm（プチラパン設定値 W55×P65） */
+        size: 65mm 55mm; /* 横向き：幅65mm × 高さ55mm（同じ55×65mmラベルを横向きで使用） */
         margin: 0;
       }
       html, body {
@@ -341,57 +341,60 @@
       .app {
         display: none !important;
       }
-      /* 印刷専用ラベルだけを表示する。用紙サイズ内に収まるよう固定サイズで指定 */
+      /* 印刷専用ラベル：横並び（文字を主役・左に大きく、QRは右に小さく） */
       #labelCardPrint {
         display: flex !important;
-        flex-direction: column !important;
+        flex-direction: row !important;
         align-items: center !important;
         justify-content: flex-start !important;
         box-shadow: none !important;
         border: none !important;
         border-radius: 0 !important;
         box-sizing: border-box !important;
-        width: 55mm;
-        height: 65mm;
-        max-height: 65mm;
-        padding: 4mm 3mm;
+        width: 65mm;
+        height: 55mm;
+        max-width: 65mm;
+        max-height: 55mm;
+        padding: 3mm;
         margin: 0;
         overflow: hidden;
         page-break-after: avoid;
         page-break-inside: avoid;
         gap: 3mm;
       }
-      /* 縦長の用紙に合わせ、印刷時は横並び(.label-row)ではなく縦並びにする */
       #labelCardPrint .label-row {
         display: flex !important;
-        flex-direction: column !important;
+        flex-direction: row !important;
         align-items: center !important;
         width: 100%;
         gap: 3mm;
       }
       #labelCardPrint .emphasis-block {
-        width: 100%;
-        text-align: center;
+        flex: 1;
+        min-width: 0;
+        text-align: left;
       }
+      /* 文字を主役に：強調1を大きく */
       #labelCardPrint .field-1 {
-        font-size: 7mm !important;
-        line-height: 1.15 !important;
+        font-size: 11mm !important;
+        line-height: 1.05 !important;
         word-break: break-all;
-        max-height: 9mm;
-        overflow: hidden;
       }
       #labelCardPrint .field-2 {
-        font-size: 3.6mm !important;
+        font-size: 3.4mm !important;
         line-height: 1.2 !important;
         word-break: break-all;
-        margin-top: 1mm !important;
-        max-height: 10mm;
-        overflow: hidden;
+        margin-top: 1.5mm !important;
+        white-space: nowrap;
+      }
+      /* QRは1/3サイズに縮小（脇役として小さく配置） */
+      #labelCardPrint .qr-block {
+        flex-shrink: 0;
       }
       #labelCardPrint .qr-block img,
       #labelCardPrint .qr-block canvas {
-        width: 30mm !important;
-        height: 30mm !important;
+        width: 10mm !important;
+        height: 10mm !important;
       }
     }
   </style>
