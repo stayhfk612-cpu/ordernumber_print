@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ラベル印刷">
+  <meta name="theme-color" content="#0a0a0f">
+  <title>QR Label Printer</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg:        #0a0a0f;
+      --surface:   #12121c;
+      --border:    #1e1e30;
+      --accent:    #00d4ff;
+      --accent2:   #0099cc;
+      --ok:        #00ff88;
+      --ng:        #ff3b5c;
+      --text:      #e8e8f0;
+      --muted:     #5a5a78;
+      --card-r:    16px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic UI', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+      min-height: 100vh;
+      padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    }
+
+    /* ─── Header ─── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px 10px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .header-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    /* ─── Main ─── */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .scan-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      color: #04303d;
+      border: none;
+      border-radius: 16px;
+      padding: 18px;
+      font-size: 17px;
+      font-weight: 800;
+      font-family: inherit;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform 0.1s, box-shadow 0.15s;
+      box-shadow: 0 4px 20px rgba(0,212,255,0.25);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .scan-btn:active { transform: scale(0.97); }
+    .scan-btn svg { width: 22px; height: 22px; flex-shrink: 0; }
+
+    .raw-data-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'Consolas', 'Courier New', monospace;
+      word-break: break-all;
+      line-height: 1.5;
+      display: none;
+    }
+    .raw-data-box.show { display: block; }
+    .raw-data-box .raw-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    /* ─── Label preview area (this is what gets printed) ─── */
+    #printArea { display: none; }
+
+    .label-card {
+      background: #ffffff;
+      color: #000000;
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+      border: 1px solid #d0d0d8;
+    }
+    .label-card.show { display: flex; }
+
+    .label-card .label-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .label-card .emphasis-block {
+      flex: 1;
+      min-width: 0;
+    }
+    .label-card .field-1 {
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: 0.01em;
+      line-height: 1.15;
+      word-break: break-all;
+      color: #000;
+    }
+    .label-card .field-2 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      word-break: break-all;
+      color: #000;
+      margin-top: 2px;
+    }
+    .label-card .qr-block {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .label-card .qr-block img,
+    .label-card .qr-block canvas {
+      display: block;
+      width: 92px;
+      height: 92px;
+    }
+
+    /* ─── Footer controls ─── */
+    .footer {
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      gap: 10px;
+    }
+    .footer-btn {
+      flex: 1;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.1s;
+      letter-spacing: 0.02em;
+      -webkit-tap-highlight-color: transparent;
+      border: 1.5px solid var(--border);
+    }
+    .footer-btn:active { transform: scale(0.97); }
+    .footer-btn.reset {
+      background: var(--border);
+      color: var(--text);
+    }
+    .footer-btn.print {
+      background: var(--ok);
+      color: #042b18;
+      border-color: var(--ok);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+    .footer-btn.print.enabled {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .status-bar {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      padding: 2px 0 4px;
+    }
+
+    /* ─── Camera scan modal ─── */
+    .cam-modal {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+    }
+    .cam-modal.open { display: flex; }
+    .cam-video-wrap {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+      background: #000;
+    }
+    .cam-video-wrap video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .cam-frame {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 72%; max-width: 320px;
+      aspect-ratio: 1;
+      transform: translate(-50%, -50%);
+      border: 3px solid var(--accent);
+      border-radius: 18px;
+      box-shadow: 0 0 0 2000px rgba(0,0,0,0.45);
+    }
+    .cam-frame::before {
+      content: '';
+      position: absolute;
+      left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: cam-scan 1.8s ease-in-out infinite;
+    }
+    @keyframes cam-scan {
+      0%, 100% { top: 6%; }
+      50%      { top: 92%; }
+    }
+    .cam-topbar {
+      position: absolute;
+      top: env(safe-area-inset-top, 0px);
+      left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 14px 16px;
+      z-index: 1;
+    }
+    .cam-close {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.5);
+      border: none;
+      color: #fff;
+      font-size: 20px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cam-status {
+      position: absolute;
+      bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+      left: 0; right: 0;
+      text-align: center;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 0 24px;
+    }
+    .cam-error {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 32px;
+      text-align: center;
+    }
+    .cam-error p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .cam-error-icon { font-size: 40px; }
+    .cam-retry-btn {
+      background: var(--accent);
+      color: #04303d;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* ─── Print styles: only the label prints ─── */
+    @media print {
+      @page {
+        size: 50mm 30mm;
+        margin: 0;
+      }
+      html, body {
+        background: #fff !important;
+        height: auto;
+      }
+      .app, .header, .footer, .scan-btn, .raw-data-box, .cam-modal {
+        display: none !important;
+      }
+      .main {
+        padding: 0;
+        overflow: visible;
+      }
+      #printArea {
+        display: block !important;
+      }
+      .label-card {
+        display: flex !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        width: 50mm;
+        height: 30mm;
+        padding: 3mm 4mm;
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-icon">🏷️</div>
+    <h1>ラベル印刷</h1>
+  </header>
+
+  <!-- Main -->
+  <main class="main">
+
+    <button class="scan-btn" id="scanBtn" onclick="openCamera()" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      QRをスキャン
+    </button>
+
+    <!-- 画面表示用のラベルプレビュー（印刷時はこの内容が出力される） -->
+    <div class="label-card" id="labelCard">
+      <div class="label-row">
+        <div class="emphasis-block">
+          <div class="field-1" id="field1"></div>
+          <div class="field-2" id="field2"></div>
+        </div>
+        <div class="qr-block" id="qrBlock"></div>
+      </div>
+    </div>
+
+    <div class="raw-data-box" id="rawDataBox">
+      <span class="raw-label">読み込みデータ（全項目・QR格納内容）</span>
+      <span id="rawDataText"></span>
+    </div>
+
+    <div class="status-bar" id="statusBar">QRをスキャンするとラベルが作成されます</div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <button class="footer-btn reset" id="resetBtn" onclick="clearAll()">↺ リセット</button>
+    <button class="footer-btn print" id="printBtn" onclick="doPrint()">🖨 印刷</button>
+  </footer>
+</div>
+
+<!-- 印刷専用エリア（画面上は隠れているが@media printでこちらが使われる場合の保険） -->
+<div id="printArea"></div>
+
+<!-- Camera scan modal -->
+<div class="cam-modal" id="camModal">
+  <div class="cam-video-wrap">
+    <video id="camVideo" playsinline muted autoplay></video>
+    <div class="cam-topbar">
+      <button class="cam-close" onclick="closeCamera()" aria-label="閉じる">✕</button>
+    </div>
+    <div class="cam-frame" id="camFrame"></div>
+    <div class="cam-status" id="camStatus">QRコードを枠内に収めてください</div>
+  </div>
+  <div class="cam-error" id="camError" style="display:none">
+    <div class="cam-error-icon">📷</div>
+    <p id="camErrorMsg">カメラを起動できませんでした。<br>ブラウザの設定でカメラへのアクセスを許可してください。</p>
+    <button class="cam-retry-btn" onclick="retryCamera()">再試行</button>
+  </div>
+</div>
+
+<script>
+  // ─── Elements ───
+  const scanBtn     = document.getElementById('scanBtn');
+  const labelCard   = document.getElementById('labelCard');
+  const field1El    = document.getElementById('field1');
+  const field2El    = document.getElementById('field2');
+  const qrBlock     = document.getElementById('qrBlock');
+  const rawDataBox  = document.getElementById('rawDataBox');
+  const rawDataText = document.getElementById('rawDataText');
+  const statusBar   = document.getElementById('statusBar');
+  const printBtn    = document.getElementById('printBtn');
+  const camModal    = document.getElementById('camModal');
+  const camVideo    = document.getElementById('camVideo');
+  const camStatus   = document.getElementById('camStatus');
+  const camError    = document.getElementById('camError');
+  const camErrorMsg = document.getElementById('camErrorMsg');
+  const camFrame    = document.getElementById('camFrame');
+
+  let lastScannedData = '';
+
+  // ─── データ分割（カンマ区切り） ───
+  // 例: "4/3-1,21622047:1411A:1513,1411A.2026-04-03 09:11:00,WJ-NX410KPV,15"
+  //  → 強調1: "4/3-1" (1番目)
+  //  → 強調2: "21622047:1411A:1513" (2番目)
+  //  → QRには全データをそのまま格納
+  function parseAndRender(raw) {
+    const data = (raw || '').trim();
+    if (!data) return;
+
+    lastScannedData = data;
+    const fields = data.split(',').map(f => f.trim());
+
+    const f1 = fields[0] || '';
+    const f2 = fields[1] || '';
+
+    field1El.textContent = f1;
+    field2El.textContent = f2;
+
+    // QRコード生成（全データを格納）
+    qrBlock.innerHTML = '';
+    new QRCode(qrBlock, {
+      text: data,
+      width: 92,
+      height: 92,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    labelCard.classList.add('show');
+    rawDataText.textContent = data;
+    rawDataBox.classList.add('show');
+
+    printBtn.classList.add('enabled');
+    statusBar.textContent = 'ラベルを確認し、印刷ボタンを押してください';
+  }
+
+  function clearAll() {
+    lastScannedData = '';
+    field1El.textContent = '';
+    field2El.textContent = '';
+    qrBlock.innerHTML = '';
+    labelCard.classList.remove('show');
+    rawDataBox.classList.remove('show');
+    rawDataText.textContent = '';
+    printBtn.classList.remove('enabled');
+    statusBar.textContent = 'QRをスキャンするとラベルが作成されます';
+  }
+
+  function doPrint() {
+    if (!lastScannedData) return;
+    window.print();
+  }
+
+  // ─── Camera scanning (QR読取り) ───
+  let camStream = null;
+  let camRafId = null;
+  let camCanvas = null;
+  let camCtx = null;
+  let nativeDetector = null;
+  let camStopScan = null;
+
+  if ('BarcodeDetector' in window) {
+    try {
+      nativeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+    } catch (e) { nativeDetector = null; }
+  }
+
+  async function openCamera() {
+    camError.style.display = 'none';
+    camFrame.style.display = '';
+    camStatus.style.display = '';
+    camModal.classList.add('open');
+
+    try {
+      camStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      });
+      camVideo.srcObject = camStream;
+      await camVideo.play();
+      startScanLoop();
+    } catch (err) {
+      showCamError(err);
+    }
+  }
+
+  function showCamError(err) {
+    camFrame.style.display = 'none';
+    camStatus.style.display = 'none';
+    camError.style.display = 'flex';
+    if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
+      camErrorMsg.innerHTML = 'カメラへのアクセスが許可されていません。<br>ブラウザの設定でこのサイトのカメラ権限を許可してください。';
+    } else if (err && err.name === 'NotFoundError') {
+      camErrorMsg.innerHTML = 'カメラが見つかりませんでした。';
+    } else {
+      camErrorMsg.innerHTML = 'カメラを起動できませんでした。<br>ページを再読み込みして再度お試しください。';
+    }
+  }
+
+  function retryCamera() { openCamera(); }
+
+  function closeCamera() {
+    camModal.classList.remove('open');
+    if (camStopScan) { camStopScan(); camStopScan = null; }
+    if (camRafId) { cancelAnimationFrame(camRafId); camRafId = null; }
+    if (camStream) {
+      camStream.getTracks().forEach(t => t.stop());
+      camStream = null;
+    }
+    camVideo.srcObject = null;
+  }
+
+  function startScanLoop() {
+    if (!camCanvas) {
+      camCanvas = document.createElement('canvas');
+      camCtx = camCanvas.getContext('2d', { willReadFrequently: true });
+    }
+
+    let busy = false;
+    let stopped = false;
+    camStopScan = () => { stopped = true; };
+
+    const scanFrame = async () => {
+      if (stopped) return;
+      if (busy || !camStream || camVideo.readyState < 2) {
+        camRafId = requestAnimationFrame(scanFrame);
+        return;
+      }
+      busy = true;
+      let value = null;
+
+      if (nativeDetector) {
+        try {
+          const codes = await nativeDetector.detect(camVideo);
+          if (codes && codes.length) value = codes[0].rawValue;
+        } catch (e) {}
+      } else if (window.jsQR) {
+        const w = camVideo.videoWidth, h = camVideo.videoHeight;
+        if (w && h) {
+          camCanvas.width = w; camCanvas.height = h;
+          camCtx.drawImage(camVideo, 0, 0, w, h);
+          const imgData = camCtx.getImageData(0, 0, w, h);
+          const result = jsQR(imgData.data, w, h);
+          if (result && result.data) value = result.data;
+        }
+      }
+
+      busy = false;
+      if (stopped) return;
+
+      if (value) {
+        onCameraResult(value.trim());
+        return;
+      }
+      camRafId = requestAnimationFrame(scanFrame);
+    };
+
+    camRafId = requestAnimationFrame(scanFrame);
+  }
+
+  function onCameraResult(value) {
+    if (!value) { camRafId = requestAnimationFrame(() => startScanLoop()); return; }
+    if (navigator.vibrate) navigator.vibrate(40);
+
+    if (camStopScan) { camStopScan(); camStopScan = null; }
+    if (camRafId) { cancelAnimationFrame(camRafId); camRafId = null; }
+
+    parseAndRender(value);
+    setTimeout(() => { closeCamera(); }, 600);
+  }
+
+  camModal.addEventListener('click', e => {
+    if (e.target === camModal) closeCamera();
+  });
+
+  // ─── ネイティブ連携用ブリッジ（将来WebViewラッパーから利用する場合） ───
+  window.onNativeScan = function(value) {
+    if (!value) return;
+    parseAndRender(String(value).trim());
+  };
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
