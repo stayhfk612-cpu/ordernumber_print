@@ -332,7 +332,7 @@
     /* ─── Print styles: 印刷時は#labelCardPrintだけを表示する ─── */
     @media print {
       @page {
-        size: 55mm 65mm; /* プリンタの物理用紙は縦のまま（W55×P65固定・印刷システムが向きを無視するため） */
+        size: 55mm 65mm; /* 幅55mm × 長さ65mm（プチラパン設定値どおりの縦印刷） */
         margin: 0;
       }
       html, body {
@@ -344,7 +344,6 @@
       .app {
         display: none !important;
       }
-      /* 用紙そのもの（縦55×65mm）。この中で内容を90度回転させて横向きにする */
       #printPage {
         display: block !important;
         position: relative;
@@ -352,62 +351,56 @@
         height: 65mm;
         overflow: hidden;
       }
-      /* 横向きの内容(65mm×55mm)を作り、90度回転して縦用紙にぴったり収める
-         （回転後の見た目の大きさが用紙サイズと一致するよう、width/heightを入れ替えて設計） */
+      /* 縦印刷：文字（強調1→強調2）を上に、QRを下に配置 */
       #labelCardPrint {
         display: flex !important;
-        flex-direction: row !important;
+        flex-direction: column !important;
         align-items: center !important;
         justify-content: flex-start !important;
         box-shadow: none !important;
         border: none !important;
         border-radius: 0 !important;
         box-sizing: border-box !important;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 65mm;
-        height: 55mm;
-        transform: translate(-50%, -50%) rotate(90deg);
-        transform-origin: center center;
+        width: 55mm;
+        height: 65mm;
         padding: 3mm;
         margin: 0;
         overflow: hidden;
-        gap: 3mm;
+        gap: 2mm;
       }
       #labelCardPrint .label-row {
         display: flex !important;
-        flex-direction: row !important;
+        flex-direction: column !important;
         align-items: center !important;
         width: 100%;
-        gap: 3mm;
+        gap: 2mm;
       }
       #labelCardPrint .emphasis-block {
-        flex: 1;
-        min-width: 0;
-        text-align: left;
+        width: 100%;
+        text-align: center;
       }
-      /* 文字を主役に：強調1を大きく */
+      /* 大きさは現状のまま維持 */
       #labelCardPrint .field-1 {
         font-size: 10mm !important;
         line-height: 1.1 !important;
         word-break: break-all;
       }
+      /* 「:」で区切って改行表示 */
       #labelCardPrint .field-2 {
         font-size: 4mm !important;
         line-height: 1.2 !important;
         word-break: normal !important;
         overflow-wrap: normal !important;
-        margin-top: 1.5mm !important;
+        margin-top: 1mm !important;
       }
-      /* QRは前回の2倍サイズ */
+      /* QRは現状の1.5倍サイズ */
       #labelCardPrint .qr-block {
         flex-shrink: 0;
       }
       #labelCardPrint .qr-block img,
       #labelCardPrint .qr-block canvas {
-        width: 20mm !important;
-        height: 20mm !important;
+        width: 30mm !important;
+        height: 30mm !important;
       }
     }
   </style>
@@ -510,12 +503,11 @@
 
   let lastScannedData = '';
 
-  // コロンの直後に改行可能ポイント(<wbr>)を入れる。
-  // これにより、長い文字列が折り返る際に文字の途中ではなく区切り(:)の後で折れるようになる。
+  // コロンの直後で必ず改行する（:で区切って複数行表示にする）。
   function withBreakHints(s) {
     const div = document.createElement('div');
     div.textContent = s;
-    return div.innerHTML.split(':').join(':<wbr>');
+    return div.innerHTML.split(':').join(':<br>');
   }
 
   // ─── データ分割（カンマ区切り） ───
