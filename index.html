@@ -127,10 +127,6 @@
     }
 
     /* ─── Label preview area (this is what gets printed) ─── */
-    #printArea {
-      display: none;
-    }
-
     .label-card {
       background: #ffffff;
       color: #000000;
@@ -143,6 +139,11 @@
       border: 1px solid #d0d0d8;
     }
     .label-card.show { display: flex; }
+
+    /* 印刷専用ラベルは画面上では常に非表示にする */
+    #labelCardPrint {
+      display: none;
+    }
 
     .label-card .label-row {
       display: flex;
@@ -328,34 +329,26 @@
       cursor: pointer;
     }
 
-    /* ─── Print styles: 画面表示用の要素は全て隠し、#printArea の複製だけを出す ─── */
+    /* ─── Print styles: 印刷時は#labelCardPrintだけを表示する ─── */
     @media print {
-      @page {
-        size: 50mm 30mm;
-        margin: 0;
-      }
       html, body {
         background: #fff !important;
         height: auto !important;
         width: auto !important;
+        margin: 0 !important;
       }
-      /* 画面用のUIを丸ごと非表示にする（#printAreaはbody直下なので影響されない） */
+      /* 画面用のUIを丸ごと非表示にする */
       .app {
         display: none !important;
       }
-      #printArea {
-        display: block !important;
-        position: static !important;
-      }
-      #printArea .label-card {
+      /* 印刷専用ラベルだけを表示する（用紙サイズはプリンタ側の設定に委ねる＝@page指定なし） */
+      #labelCardPrint {
         display: flex !important;
         box-shadow: none !important;
         border: none !important;
         border-radius: 0 !important;
-        width: 50mm;
-        height: 30mm;
-        padding: 3mm 4mm;
-        page-break-inside: avoid;
+        width: auto;
+        padding: 4mm;
         margin: 0;
       }
     }
@@ -378,14 +371,14 @@
       QRをスキャン
     </button>
 
-    <!-- 画面表示用のラベルプレビュー（印刷時はこの内容が出力される） -->
-    <div class="label-card" id="labelCard">
+    <!-- 画面表示用のラベルプレビュー -->
+    <div class="label-card" id="labelCardPreview">
       <div class="label-row">
         <div class="emphasis-block">
-          <div class="field-1" id="field1"></div>
-          <div class="field-2" id="field2"></div>
+          <div class="field-1" id="field1Preview"></div>
+          <div class="field-2" id="field2Preview"></div>
         </div>
-        <div class="qr-block" id="qrBlock"></div>
+        <div class="qr-block" id="qrBlockPreview"></div>
       </div>
     </div>
 
@@ -405,8 +398,16 @@
   </footer>
 </div>
 
-<!-- 印刷専用エリア（画面上は隠れているが@media printでこちらが使われる場合の保険） -->
-<div id="printArea"></div>
+<!-- 印刷専用ラベル（body直下に常設。画面では非表示、印刷時のみ表示） -->
+<div class="label-card" id="labelCardPrint">
+  <div class="label-row">
+    <div class="emphasis-block">
+      <div class="field-1" id="field1Print"></div>
+      <div class="field-2" id="field2Print"></div>
+    </div>
+    <div class="qr-block" id="qrBlockPrint"></div>
+  </div>
+</div>
 
 <!-- Camera scan modal -->
 <div class="cam-modal" id="camModal">
@@ -427,11 +428,14 @@
 
 <script>
   // ─── Elements ───
-  const scanBtn     = document.getElementById('scanBtn');
-  const labelCard   = document.getElementById('labelCard');
-  const field1El    = document.getElementById('field1');
-  const field2El    = document.getElementById('field2');
-  const qrBlock     = document.getElementById('qrBlock');
+  const scanBtn      = document.getElementById('scanBtn');
+  const field1Preview = document.getElementById('field1Preview');
+  const field2Preview = document.getElementById('field2Preview');
+  const qrBlockPreview = document.getElementById('qrBlockPreview');
+  const labelCardPreview = document.getElementById('labelCardPreview');
+  const field1Print   = document.getElementById('field1Print');
+  const field2Print   = document.getElementById('field2Print');
+  const qrBlockPrint  = document.getElementById('qrBlockPrint');
   const rawDataBox  = document.getElementById('rawDataBox');
   const rawDataText = document.getElementById('rawDataText');
   const statusBar   = document.getElementById('statusBar');
@@ -460,12 +464,11 @@
     const f1 = fields[0] || '';
     const f2 = fields[1] || '';
 
-    field1El.textContent = f1;
-    field2El.textContent = f2;
-
-    // QRコード生成（全データを格納）
-    qrBlock.innerHTML = '';
-    new QRCode(qrBlock, {
+    // 画面プレビュー側
+    field1Preview.textContent = f1;
+    field2Preview.textContent = f2;
+    qrBlockPreview.innerHTML = '';
+    new QRCode(qrBlockPreview, {
       text: data,
       width: 92,
       height: 92,
@@ -474,7 +477,20 @@
       correctLevel: QRCode.CorrectLevel.M
     });
 
-    labelCard.classList.add('show');
+    // 印刷専用側（常に同じ内容に同期しておく。印刷時に初めて表示される）
+    field1Print.textContent = f1;
+    field2Print.textContent = f2;
+    qrBlockPrint.innerHTML = '';
+    new QRCode(qrBlockPrint, {
+      text: data,
+      width: 92,
+      height: 92,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+
+    labelCardPreview.classList.add('show');
     rawDataText.textContent = data;
     rawDataBox.classList.add('show');
 
@@ -484,10 +500,13 @@
 
   function clearAll() {
     lastScannedData = '';
-    field1El.textContent = '';
-    field2El.textContent = '';
-    qrBlock.innerHTML = '';
-    labelCard.classList.remove('show');
+    field1Preview.textContent = '';
+    field2Preview.textContent = '';
+    qrBlockPreview.innerHTML = '';
+    field1Print.textContent = '';
+    field2Print.textContent = '';
+    qrBlockPrint.innerHTML = '';
+    labelCardPreview.classList.remove('show');
     rawDataBox.classList.remove('show');
     rawDataText.textContent = '';
     printBtn.classList.remove('enabled');
@@ -496,55 +515,7 @@
 
   function doPrint() {
     if (!lastScannedData) return;
-
-    // 印刷専用エリアに、画面上のラベルと同じ内容を複製して作る。
-    // (画面用の.appはdisplay:noneにされるため、印刷時はこちら側だけを使う)
-    const printArea = document.getElementById('printArea');
-    printArea.innerHTML = '';
-
-    const card = document.createElement('div');
-    card.className = 'label-card show';
-
-    const row = document.createElement('div');
-    row.className = 'label-row';
-
-    const emphasisBlock = document.createElement('div');
-    emphasisBlock.className = 'emphasis-block';
-
-    const f1 = document.createElement('div');
-    f1.className = 'field-1';
-    f1.textContent = field1El.textContent;
-
-    const f2 = document.createElement('div');
-    f2.className = 'field-2';
-    f2.textContent = field2El.textContent;
-
-    emphasisBlock.appendChild(f1);
-    emphasisBlock.appendChild(f2);
-
-    const qrWrap = document.createElement('div');
-    qrWrap.className = 'qr-block';
-
-    row.appendChild(emphasisBlock);
-    row.appendChild(qrWrap);
-    card.appendChild(row);
-    printArea.appendChild(card);
-
-    // QRコードを印刷専用エリア側にも生成する
-    new QRCode(qrWrap, {
-      text: lastScannedData,
-      width: 92,
-      height: 92,
-      colorDark: '#000000',
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M
-    });
-
-    // QRCode.jsは非同期で<img>/<canvas>を差し込むため、
-    // 描画が確実に終わるまで少し待ってから印刷を呼ぶ
-    setTimeout(() => {
-      window.print();
-    }, 150);
+    window.print();
   }
 
   // ─── Camera scanning (QR読取り) ───
