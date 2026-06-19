@@ -185,14 +185,11 @@
       height: 92px;
     }
 
-    /* ─── Footer controls ─── */
-    .footer {
-      padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
-      flex-shrink: 0;
-      border-top: 1px solid var(--border);
-      background: var(--surface);
+    /* ─── 操作ボタン（上部配置） ─── */
+    .action-row {
       display: flex;
       gap: 10px;
+      flex-shrink: 0;
     }
     .footer-btn {
       flex: 1;
@@ -337,10 +334,8 @@
       }
       html, body {
         background: #fff !important;
-        height: auto !important;
-        width: auto !important;
         margin: 0 !important;
-        overflow: hidden !important;
+        padding: 0 !important;
       }
       /* 画面用のUIを丸ごと非表示にする */
       .app {
@@ -355,8 +350,10 @@
         box-shadow: none !important;
         border: none !important;
         border-radius: 0 !important;
+        box-sizing: border-box !important;
         width: 55mm;
         height: 65mm;
+        max-height: 65mm;
         padding: 4mm 3mm;
         margin: 0;
         overflow: hidden;
@@ -378,19 +375,23 @@
       }
       #labelCardPrint .field-1 {
         font-size: 7mm !important;
-        line-height: 1.2 !important;
+        line-height: 1.15 !important;
         word-break: break-all;
+        max-height: 9mm;
+        overflow: hidden;
       }
       #labelCardPrint .field-2 {
-        font-size: 5mm !important;
-        line-height: 1.25 !important;
+        font-size: 3.6mm !important;
+        line-height: 1.2 !important;
         word-break: break-all;
         margin-top: 1mm !important;
+        max-height: 10mm;
+        overflow: hidden;
       }
       #labelCardPrint .qr-block img,
       #labelCardPrint .qr-block canvas {
-        width: 32mm !important;
-        height: 32mm !important;
+        width: 30mm !important;
+        height: 30mm !important;
       }
     }
   </style>
@@ -412,6 +413,12 @@
       QRをスキャン
     </button>
 
+    <!-- 操作ボタン（上部に配置） -->
+    <div class="action-row">
+      <button class="footer-btn reset" id="resetBtn" onclick="clearAll()">↺ リセット</button>
+      <button class="footer-btn print" id="printBtn" onclick="doPrint()">🖨 印刷</button>
+    </div>
+
     <!-- 画面表示用のラベルプレビュー -->
     <div class="label-card" id="labelCardPreview">
       <div class="label-row">
@@ -431,12 +438,6 @@
     <div class="status-bar" id="statusBar">QRをスキャンするとラベルが作成されます</div>
 
   </main>
-
-  <!-- Footer -->
-  <footer class="footer">
-    <button class="footer-btn reset" id="resetBtn" onclick="clearAll()">↺ リセット</button>
-    <button class="footer-btn print" id="printBtn" onclick="doPrint()">🖨 印刷</button>
-  </footer>
 </div>
 
 <!-- 印刷専用ラベル（body直下に常設。画面では非表示、印刷時のみ表示） -->
@@ -519,7 +520,7 @@
     });
 
     // 印刷専用側（常に同じ内容に同期しておく。印刷時に初めて表示される）
-    // 表示サイズ(32mm)に対して十分な解像度(300px)で生成し、印字をくっきりさせる
+    // 表示サイズ(28mm)に対して十分な解像度(300px)で生成し、印字をくっきりさせる
     field1Print.textContent = f1;
     field2Print.textContent = f2;
     qrBlockPrint.innerHTML = '';
