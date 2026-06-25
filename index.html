@@ -541,6 +541,10 @@
         line-height: 1.1 !important;
         word-break: break-all;
       }
+      /* 指定フィールド印字モードのときは、印字文字サイズを50%にする */
+      #labelCardPrint.field-mode .field-1 {
+        font-size: 5mm !important;
+      }
       /* 「:」で区切って改行表示 */
       #labelCardPrint .field-2 {
         font-size: 4mm !important;
@@ -672,6 +676,7 @@
   const statusBar   = document.getElementById('statusBar');
   const printBtn    = document.getElementById('printBtn');
   const statusDot   = document.getElementById('statusDot');
+  const labelCardPrint = document.getElementById('labelCardPrint');
   const modeBtnDefault = document.getElementById('modeBtnDefault');
   const modeBtnField   = document.getElementById('modeBtnField');
   const fieldSelector  = document.getElementById('fieldSelector');
@@ -782,6 +787,8 @@
       field2Preview.innerHTML = '';
       field1Print.textContent = textForLabel;
       field2Print.innerHTML = '';
+      // 印刷用ラベルに「フィールドモード」目印を付ける（印字文字サイズを切り替えるため）
+      labelCardPrint.classList.add('field-mode');
     } else {
       const f1 = fields[0] || '';
       const f2 = fields[1] || '';
@@ -789,6 +796,7 @@
       field2Preview.innerHTML = withBreakHints(f2);
       field1Print.textContent = f1;
       field2Print.innerHTML = withBreakHints(f2);
+      labelCardPrint.classList.remove('field-mode');
     }
 
     // QR生成（画面用92px / 印刷用300px）
@@ -815,6 +823,7 @@
     field2Print.innerHTML = '';
     qrBlockPrint.innerHTML = '';
     labelCardPreview.classList.remove('show');
+    labelCardPrint.classList.remove('field-mode');
     rawDataBox.classList.remove('show');
     rawDataText.textContent = '';
     printBtn.classList.remove('enabled');
