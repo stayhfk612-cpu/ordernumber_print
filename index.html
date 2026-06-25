@@ -15,16 +15,22 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     :root {
-      --bg:        #0a0a0f;
-      --surface:   #12121c;
-      --border:    #1e1e30;
-      --accent:    #00d4ff;
-      --accent2:   #0099cc;
-      --ok:        #00ff88;
-      --ng:        #ff3b5c;
-      --text:      #e8e8f0;
-      --muted:     #5a5a78;
+      --bg:        #15171c;
+      --surface:   #1b1e25;
+      --surface2:  #20242c;
+      --border:    #2c3038;
+      --accent:    #ffb020;
+      --accent2:   #cc8814;
+      --ok:        #2fe3ad;
+      --ng:        #ff5c72;
+      --paper:     #f3efe4;
+      --ink:       #1a1a1a;
+      --text:      #eceef2;
+      --muted:     #71778a;
       --card-r:    16px;
+      --chamfer-lg: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+      --chamfer-md: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+      --chamfer-sm: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -50,24 +56,43 @@
     .header {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 14px 20px 10px;
+      gap: 12px;
+      padding: 14px 20px 12px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
     .header-icon {
-      width: 32px; height: 32px;
-      background: linear-gradient(135deg, var(--accent2), var(--accent));
-      border-radius: 8px;
+      width: 34px; height: 34px;
+      background: var(--surface2);
+      border: 1.5px solid var(--accent2);
+      clip-path: var(--chamfer-sm);
       display: flex; align-items: center; justify-content: center;
       font-size: 17px;
       flex-shrink: 0;
     }
     .header h1 {
-      font-size: 17px;
-      font-weight: 700;
-      letter-spacing: 0.02em;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      flex: 1;
+    }
+    .status-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      flex-shrink: 0;
+      animation: dot-pulse 1.6s ease-in-out infinite;
+    }
+    .status-dot.ready {
+      background: var(--ok);
+      box-shadow: 0 0 8px var(--ok);
+      animation: none;
+    }
+    @keyframes dot-pulse {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.35; }
     }
 
     /* ─── Main ─── */
@@ -80,13 +105,95 @@
       gap: 14px;
     }
 
+    /* ─── モード切替 ─── */
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .mode-btn {
+      flex: 1;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      clip-path: var(--chamfer-md);
+      padding: 11px 8px;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mode-btn-sub {
+      font-size: 10px;
+      font-weight: 500;
+      font-family: 'Consolas', 'Courier New', monospace;
+      color: var(--muted);
+      opacity: 0.85;
+    }
+    .mode-btn.active {
+      border-color: var(--accent);
+      background: rgba(255,176,32,0.1);
+      color: var(--accent);
+    }
+    .mode-btn.active .mode-btn-sub { color: var(--accent); opacity: 0.8; }
+    .mode-btn:active { transform: scale(0.97); }
+
+    /* ─── フィールド番号セレクタ ─── */
+    .field-selector {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      clip-path: var(--chamfer-md);
+      padding: 12px 14px;
+      flex-shrink: 0;
+    }
+    .field-selector-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 10px;
+    }
+    .field-num-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .field-num-btn {
+      min-width: 48px;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      clip-path: var(--chamfer-sm);
+      padding: 9px 14px;
+      color: var(--text);
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+    }
+    .field-num-btn.active {
+      border-color: var(--accent);
+      background: rgba(255,176,32,0.14);
+      color: var(--accent);
+    }
+    .field-num-btn:active { transform: scale(0.95); }
+
     .scan-btn {
       width: 100%;
+      position: relative;
       background: linear-gradient(135deg, var(--accent2), var(--accent));
-      color: #04303d;
+      color: #2a1900;
       border: none;
-      border-radius: 16px;
-      padding: 18px;
+      clip-path: var(--chamfer-lg);
+      padding: 19px;
       font-size: 17px;
       font-weight: 800;
       font-family: inherit;
@@ -97,16 +204,34 @@
       justify-content: center;
       gap: 10px;
       transition: transform 0.1s, box-shadow 0.15s;
-      box-shadow: 0 4px 20px rgba(0,212,255,0.25);
+      box-shadow: 0 4px 22px rgba(255,176,32,0.3);
       -webkit-tap-highlight-color: transparent;
     }
     .scan-btn:active { transform: scale(0.97); }
     .scan-btn svg { width: 22px; height: 22px; flex-shrink: 0; }
+    /* ビューファインダー風の角ブラケット（左上・右下） */
+    .scan-btn::before,
+    .scan-btn::after {
+      content: '';
+      position: absolute;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(42,25,0,0.5);
+      pointer-events: none;
+    }
+    .scan-btn::before {
+      top: 6px; left: 6px;
+      border-right: none; border-bottom: none;
+    }
+    .scan-btn::after {
+      bottom: 6px; right: 6px;
+      border-left: none; border-top: none;
+    }
 
     .raw-data-box {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-left: 3px solid var(--accent2);
+      clip-path: var(--chamfer-sm);
       padding: 12px 14px;
       font-size: 11px;
       color: var(--muted);
@@ -125,6 +250,9 @@
       margin-bottom: 4px;
       display: block;
     }
+    .raw-data-box .raw-label::before {
+      content: '▸ ';
+    }
 
     /* ─── Label preview area (this is what gets printed) ─── */
     .label-card {
@@ -139,6 +267,34 @@
       border: 1px solid #d0d0d8;
     }
     .label-card.show { display: flex; }
+
+    /* 画面プレビューだけを「ミシン目つきの台紙ラベル」風に。
+       印刷専用(#labelCardPrint)はここでは一切上書きしない＝印刷結果に影響なし。 */
+    #labelCardPreview {
+      background: var(--paper);
+      border: none;
+      border-radius: 3px;
+      padding: 26px 16px 16px;
+      box-shadow: 0 10px 26px rgba(0,0,0,0.5), 0 1px 0 rgba(0,0,0,0.2);
+      transform: rotate(-0.5deg);
+      margin: 2px 8px 12px;
+      position: relative;
+    }
+    #labelCardPreview::before {
+      content: '';
+      position: absolute;
+      top: 14px; left: 16px; right: 16px;
+      border-top: 2px dashed rgba(0,0,0,0.2);
+    }
+    #labelCardPreview::after {
+      content: '';
+      position: absolute;
+      top: 6px; left: 22px;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--bg);
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+    }
 
     /* 印刷専用ラベルは画面上では常に非表示にする */
     #printPage {
@@ -196,7 +352,7 @@
     }
     .footer-btn {
       flex: 1;
-      border-radius: 12px;
+      clip-path: var(--chamfer-md);
       padding: 14px;
       font-size: 15px;
       font-weight: 700;
@@ -209,12 +365,12 @@
     }
     .footer-btn:active { transform: scale(0.97); }
     .footer-btn.reset {
-      background: var(--border);
+      background: var(--surface2);
       color: var(--text);
     }
     .footer-btn.print {
       background: var(--ok);
-      color: #042b18;
+      color: #04261c;
       border-color: var(--ok);
       opacity: 0.4;
       pointer-events: none;
@@ -320,10 +476,10 @@
     .cam-error-icon { font-size: 40px; }
     .cam-retry-btn {
       background: var(--accent);
-      color: #04303d;
+      color: #2a1900;
       border: none;
       padding: 10px 22px;
-      border-radius: 10px;
+      clip-path: var(--chamfer-sm);
       font-size: 14px;
       font-weight: 700;
       cursor: pointer;
@@ -412,10 +568,31 @@
   <header class="header">
     <div class="header-icon">🏷️</div>
     <h1>ラベル印刷</h1>
+    <div class="status-dot" id="statusDot"></div>
   </header>
 
   <!-- Main -->
   <main class="main">
+
+    <!-- モード切替 -->
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="modeBtnDefault" onclick="setMode('default')" type="button">
+        標準モード
+        <span class="mode-btn-sub">1・2番目を強調＋全データQR</span>
+      </button>
+      <button class="mode-btn" id="modeBtnField" onclick="setMode('field')" type="button">
+        指定フィールド印字
+        <span class="mode-btn-sub">選んだ項目の文字＋その項目QR</span>
+      </button>
+    </div>
+
+    <!-- フィールド番号セレクタ（指定フィールド印字モードのときだけ表示） -->
+    <div class="field-selector" id="fieldSelector" style="display:none">
+      <span class="field-selector-label">印字する項目（カンマ区切りの何番目）：</span>
+      <div class="field-num-row" id="fieldNumRow">
+        <!-- ボタンはJSで動的生成 -->
+      </div>
+    </div>
 
     <button class="scan-btn" id="scanBtn" onclick="openCamera()" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -440,7 +617,7 @@
     </div>
 
     <div class="raw-data-box" id="rawDataBox">
-      <span class="raw-label">読み込みデータ（全項目・QR格納内容）</span>
+      <span class="raw-label">読み込みデータ（全項目）</span>
       <span id="rawDataText"></span>
     </div>
 
@@ -494,6 +671,11 @@
   const rawDataText = document.getElementById('rawDataText');
   const statusBar   = document.getElementById('statusBar');
   const printBtn    = document.getElementById('printBtn');
+  const statusDot   = document.getElementById('statusDot');
+  const modeBtnDefault = document.getElementById('modeBtnDefault');
+  const modeBtnField   = document.getElementById('modeBtnField');
+  const fieldSelector  = document.getElementById('fieldSelector');
+  const fieldNumRow    = document.getElementById('fieldNumRow');
   const camModal    = document.getElementById('camModal');
   const camVideo    = document.getElementById('camVideo');
   const camStatus   = document.getElementById('camStatus');
@@ -502,6 +684,47 @@
   const camFrame    = document.getElementById('camFrame');
 
   let lastScannedData = '';
+
+  // ─── モード管理 ───
+  // 'default' : 1・2番目を強調表示し、QRには全データを格納（従来モード）
+  // 'field'   : 選んだ番号のフィールドだけを文字表示し、QRもそのフィールド単体
+  let currentMode = 'default';
+  let selectedFieldIndex = 1; // 1始まり（1番目）。fieldモードで使用。
+
+  function setMode(mode) {
+    currentMode = mode;
+    modeBtnDefault.classList.toggle('active', mode === 'default');
+    modeBtnField.classList.toggle('active', mode === 'field');
+    fieldSelector.style.display = (mode === 'field') ? 'block' : 'none';
+    // モードを変えたら表示をクリアして混乱を防ぐ
+    clearAll();
+    statusBar.textContent = (mode === 'field')
+      ? '印字する項目の番号を選び、QRをスキャンしてください'
+      : 'QRをスキャンするとラベルが作成されます';
+  }
+
+  // フィールド番号ボタンを生成（スキャン前は1〜8の固定、スキャン後は実際の項目数に合わせて再生成）
+  function buildFieldButtons(count) {
+    fieldNumRow.innerHTML = '';
+    for (let i = 1; i <= count; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'field-num-btn' + (i === selectedFieldIndex ? ' active' : '');
+      btn.type = 'button';
+      btn.textContent = i + '番目';
+      btn.onclick = () => selectField(i);
+      fieldNumRow.appendChild(btn);
+    }
+  }
+
+  function selectField(i) {
+    selectedFieldIndex = i;
+    // ボタンの見た目を更新
+    Array.from(fieldNumRow.children).forEach((b, idx) => {
+      b.classList.toggle('active', (idx + 1) === i);
+    });
+    // すでにスキャン済みなら、選び直しに合わせて再描画
+    if (lastScannedData) parseAndRender(lastScannedData);
+  }
 
   // コロンの直後で必ず改行する（:で区切って複数行表示にする）。
   function withBreakHints(s) {
@@ -512,9 +735,20 @@
 
   // ─── データ分割（カンマ区切り） ───
   // 例: "4/3-1,21622047:1411A:1513,1411A.2026-04-03 09:11:00,WJ-NX410KPV,15"
-  //  → 強調1: "4/3-1" (1番目)
-  //  → 強調2: "21622047:1411A:1513" (2番目)
-  //  → QRには全データをそのまま格納
+  //  → 標準モード: 強調1="4/3-1"(1番目), 強調2=2番目, QRに全データ
+  //  → 指定フィールドモード: 選んだ番号の項目の文字＋その項目単体のQR
+  function renderQR(el, text, size) {
+    el.innerHTML = '';
+    new QRCode(el, {
+      text: text,
+      width: size,
+      height: size,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+
   function parseAndRender(raw) {
     const data = (raw || '').trim();
     if (!data) return;
@@ -522,57 +756,72 @@
     lastScannedData = data;
     const fields = data.split(',').map(f => f.trim());
 
-    const f1 = fields[0] || '';
-    const f2 = fields[1] || '';
+    // フィールド番号ボタンを実際の項目数に合わせて作り直す（fieldモード時のみ表示される）
+    if (currentMode === 'field') {
+      if (selectedFieldIndex > fields.length) selectedFieldIndex = fields.length;
+      buildFieldButtons(fields.length);
+    }
 
-    // 画面プレビュー側
-    field1Preview.textContent = f1;
-    field2Preview.innerHTML = withBreakHints(f2);
-    qrBlockPreview.innerHTML = '';
-    new QRCode(qrBlockPreview, {
-      text: data,
-      width: 92,
-      height: 92,
-      colorDark: '#000000',
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M
-    });
+    let textForLabel;   // 文字として印字する内容
+    let textForQR;      // QRに格納する内容
 
-    // 印刷専用側（常に同じ内容に同期しておく。印刷時に初めて表示される）
-    // 表示サイズ(28mm)に対して十分な解像度(300px)で生成し、印字をくっきりさせる
-    field1Print.textContent = f1;
-    field2Print.innerHTML = withBreakHints(f2);
-    qrBlockPrint.innerHTML = '';
-    new QRCode(qrBlockPrint, {
-      text: data,
-      width: 300,
-      height: 300,
-      colorDark: '#000000',
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M
-    });
+    if (currentMode === 'field') {
+      // 指定フィールド印字モード：選んだ番号（1始まり）の項目だけ
+      const picked = fields[selectedFieldIndex - 1] || '';
+      textForLabel = picked;
+      textForQR = picked;          // QRも選んだ項目単体
+    } else {
+      // 標準モード：1番目を強調1、2番目を強調2、QRには全データ
+      textForLabel = null;          // 下で個別にセット
+      textForQR = data;
+    }
+
+    if (currentMode === 'field') {
+      // 文字は1つだけ大きく表示（強調1の枠を使い、強調2は空に）
+      field1Preview.textContent = textForLabel;
+      field2Preview.innerHTML = '';
+      field1Print.textContent = textForLabel;
+      field2Print.innerHTML = '';
+    } else {
+      const f1 = fields[0] || '';
+      const f2 = fields[1] || '';
+      field1Preview.textContent = f1;
+      field2Preview.innerHTML = withBreakHints(f2);
+      field1Print.textContent = f1;
+      field2Print.innerHTML = withBreakHints(f2);
+    }
+
+    // QR生成（画面用92px / 印刷用300px）
+    renderQR(qrBlockPreview, textForQR, 92);
+    renderQR(qrBlockPrint, textForQR, 300);
 
     labelCardPreview.classList.add('show');
     rawDataText.textContent = data;
     rawDataBox.classList.add('show');
 
     printBtn.classList.add('enabled');
-    statusBar.textContent = 'ラベルを確認し、印刷ボタンを押してください';
+    statusDot.classList.add('ready');
+    statusBar.textContent = (currentMode === 'field')
+      ? `${selectedFieldIndex}番目「${textForLabel}」を印字します。印刷ボタンを押してください`
+      : 'ラベルを確認し、印刷ボタンを押してください';
   }
 
   function clearAll() {
     lastScannedData = '';
     field1Preview.textContent = '';
-    field2Preview.textContent = '';
+    field2Preview.innerHTML = '';
     qrBlockPreview.innerHTML = '';
     field1Print.textContent = '';
-    field2Print.textContent = '';
+    field2Print.innerHTML = '';
     qrBlockPrint.innerHTML = '';
     labelCardPreview.classList.remove('show');
     rawDataBox.classList.remove('show');
     rawDataText.textContent = '';
     printBtn.classList.remove('enabled');
-    statusBar.textContent = 'QRをスキャンするとラベルが作成されます';
+    statusDot.classList.remove('ready');
+    statusBar.textContent = (currentMode === 'field')
+      ? '印字する項目の番号を選び、QRをスキャンしてください'
+      : 'QRをスキャンするとラベルが作成されます';
   }
 
   function doPrint() {
@@ -713,6 +962,9 @@
       navigator.serviceWorker.register('./sw.js').catch(() => {});
     });
   }
+
+  // 起動時：フィールド番号ボタンを初期表示（スキャン前は1〜8を仮表示。スキャン後に実際の項目数へ更新）
+  buildFieldButtons(8);
 </script>
 </body>
 </html>
